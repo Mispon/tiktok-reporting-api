@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"tiktok-reporting-api/internal/utils"
+	"github.com/mispon/tiktok-reporting-api/internal/utils"
 )
 
 const (
