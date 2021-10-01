@@ -25,6 +25,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	fmt.Printf("starting with opts: %v\n", opts)
 	if err := run(&opts); err != nil {
 		log.Fatal(err)
 	}
