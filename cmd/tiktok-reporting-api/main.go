@@ -11,7 +11,7 @@ import (
 )
 
 type Opts struct {
-	Endpoint     string `short:"e" long:"endpoint" description:"API endpoint"`
+	Endpoint     string `short:"e" long:"endpoint" description:"API endpoint" default:"0.0.0.0:80"`
 	AppId        int    `short:"i" long:"app_id" description:"TikTok app id"`
 	AppSecret    string `short:"s" long:"app_secret" description:"TikTok app secret"`
 	SandboxToken string `short:"t" long:"sandbox_token" description:"TikTok app sandbox token"`

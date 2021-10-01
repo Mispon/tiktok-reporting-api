@@ -18,6 +18,7 @@ USER developer
 
 RUN echo developer | sudo -S DEBIAN_FRONTEND="noninteractive" apt install -y golang
 RUN echo developer | sudo -S apt install -y ca-certificates && sudo update-ca-certificates
+RUN echo developer | sudo -S apt install -y make git
 
 ENV GOPATH /home/developer/go
 ENV PATH $PATH:/home/developer/go/bin
@@ -26,12 +27,12 @@ COPY . /home/developer/go/src/github.com/mispon/tiktok-reporting-api
 RUN echo developer | sudo -S chown -R developer /home/developer/
 
 WORKDIR /home/developer/go/src/github.com/mispon/tiktok-reporting-api
-RUN make deps && make build
+RUN make build
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
 COPY --from=builder /home/developer/go/src/github.com/mispon/tiktok-reporting-api/bin/tiktok-reporting-api .
 RUN chown root:root tiktok-reporting-api
-EXPOSE 8080
-CMD ["./tiktok-reporting-api"]
+EXPOSE 80
+ENTRYPOINT ["./tiktok-reporting-api"]

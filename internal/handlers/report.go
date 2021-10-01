@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/mispon/tiktok-reporting-api/internal/utils"
@@ -38,10 +39,15 @@ func (rh *reportHandler) Init() {
 }
 
 // callback handles TikTok auth callbacks
-func (rh *reportHandler) callback(_ http.ResponseWriter, request *http.Request) {
+func (rh *reportHandler) callback(rw http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 	authCode := query.Get("auth_code")
 	fmt.Printf("[callback] received callback with auth_code: %s\n", authCode)
+
+	if len(authCode) == 0 {
+		_, _ = io.WriteString(rw, "[callback] received empty auth_code!")
+		return
+	}
 
 	payload := map[string]interface{}{"app_id": rh.AppId, "secret": rh.AppSecret, "auth_code": authCode}
 	jsonData, err := json.Marshal(payload)
@@ -53,7 +59,7 @@ func (rh *reportHandler) callback(_ http.ResponseWriter, request *http.Request) 
 	}
 
 	code, found := resp["code"]
-	if !found || code.(int) != 0 {
+	if !found || code.(float64) != 0 {
 		fmt.Printf("[callback] received invalid response: %v\n", resp)
 		return
 	}
@@ -61,10 +67,14 @@ func (rh *reportHandler) callback(_ http.ResponseWriter, request *http.Request) 
 	data := resp["data"].(struct{ accessToken string })
 	rh.Token = data.accessToken
 	fmt.Printf("[callback] access token is %s\n", rh.Token)
+
+	_, _ = io.WriteString(rw, "ok")
 }
 
 // getAuctionReport get auction marketing data from TikTok API
-func (rh *reportHandler) getAuctionReport(_ http.ResponseWriter, request *http.Request) {
+func (rh *reportHandler) getAuctionReport(rw http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
 	fmt.Printf("[getAuctionReport] received query: %v\n", query)
+
+	_, _ = io.WriteString(rw, "auction report data")
 }
