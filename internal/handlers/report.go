@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+
+	gsh "github.com/mispon/tiktok-reporting-api/internal/google_sheets"
 
 	"github.com/mispon/tiktok-reporting-api/internal/utils"
 )
@@ -22,9 +25,10 @@ type ReportHandler interface {
 // New constructor
 func New(appId int, appSecret string, sbToken string) ReportHandler {
 	return &reportHandler{
-		AppId:     appId,
-		AppSecret: appSecret,
-		Token:     sbToken,
+		AppId:        appId,
+		AppSecret:    appSecret,
+		Token:        sbToken,
+		googleSheets: gsh.New(),
 	}
 }
 
@@ -33,12 +37,19 @@ type reportHandler struct {
 	AppSecret    string
 	Token        string
 	AdvertiserId float64
+	googleSheets gsh.GoogleSheet
 }
 
 // Init process handlers initialization
 func (rh *reportHandler) Init() {
 	http.HandleFunc("/auth/callback", rh.callback)
 	http.HandleFunc("/report/auction", rh.getAuctionReport)
+	http.HandleFunc("/sheets/write_row", rh.writeRow)
+
+	err := rh.googleSheets.Init(context.Background())
+	if err != nil {
+		fmt.Printf("[Init] failed to init google sheets, error: %s\n", err.Error())
+	}
 }
 
 // callback handles TikTok auth callbacks
@@ -97,4 +108,25 @@ func (rh *reportHandler) getAuctionReport(rw http.ResponseWriter, request *http.
 	}
 
 	_, _ = io.WriteString(rw, resp)
+}
+
+// writeRow writes simple row in google spreadsheets
+func (rh *reportHandler) writeRow(rw http.ResponseWriter, request *http.Request) {
+	query := request.URL.Query()
+	_ = request.ParseForm()
+
+	valueRange := query.Get("value_range")
+	strValues := request.Form["values"]
+
+	var values = make([]interface{}, len(strValues))
+	for i := range strValues {
+		values[i] = strValues[i]
+	}
+
+	err := rh.googleSheets.WriteRow(valueRange, values)
+	if err != nil {
+		fmt.Printf("[writeRow] failed to write data to sheet, error: %s\n", err.Error())
+	}
+
+	_, _ = io.WriteString(rw, "ok")
 }
