@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	cloud.google.com/go v0.97.0 // indirect
+	cloud.google.com/go/bigquery v1.24.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/jessevdk/go-flags v1.5.0
 	golang.org/x/net v0.0.0-20211007125505-59d4e928ea9d // indirect

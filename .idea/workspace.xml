@@ -50,7 +50,7 @@
     <property name="go.formatter.settings.were.checked" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
-    <property name="last_opened_file_path" value="$USER_HOME$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/bin" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
@@ -59,18 +59,45 @@
     <property name="rearrange.code.on.save" value="true" />
     <property name="settings.editor.selected.configurable" value="configurable.group.build" />
   </component>
-  <component name="RunManager">
-    <configuration name="build" type="GoApplicationRunConfiguration" factoryName="Go Application">
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\tomyt\Projects\Personal\Golang\tiktok-reporting-api\bin" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\tomyt\Projects\Personal\Golang\tiktok-reporting-api\internal\store" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Test.go test">
+    <configuration name="go build" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="tiktok-reporting-api" />
-      <working_directory value="$PROJECT_DIR$" />
-      <parameters value="-e 0.0.0.0:8080 -i 7013617763738451969 -s d1b5e64e09992b4652a3bc9c2ff3dfe1fa41ec6e -t 5ca231346d825eaa63ee96ae669aed1bbf78c8f6" />
-      <kind value="DIRECTORY" />
-      <package value="tiktok-reporting-api" />
+      <working_directory value="$PROJECT_DIR$/bin" />
+      <kind value="PACKAGE" />
+      <package value="github.com/mispon/tiktok-reporting-api/cmd/tiktok-reporting-api" />
       <directory value="$PROJECT_DIR$/cmd/tiktok-reporting-api" />
       <filePath value="$PROJECT_DIR$" />
       <output_directory value="$PROJECT_DIR$/bin" />
       <method v="2" />
     </configuration>
+    <configuration name="go test" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">
+      <module name="tiktok-reporting-api" />
+      <working_directory value="$PROJECT_DIR$/internal/parser" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="github.com/mispon/tiktok-reporting-api/internal/parser" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Go Build.go build" />
+      <item itemvalue="Go Test.go test" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.go test" />
+      </list>
+    </recent_temporary>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">

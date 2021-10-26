@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"net/url"
 
-	gsh "github.com/mispon/tiktok-reporting-api/internal/google_sheets"
+	"github.com/mispon/tiktok-reporting-api/internal/parser"
 
+	"github.com/mispon/tiktok-reporting-api/internal/store"
+
+	"github.com/mispon/tiktok-reporting-api/internal/env"
 	"github.com/mispon/tiktok-reporting-api/internal/utils"
 )
 
@@ -19,37 +22,35 @@ const (
 )
 
 type ReportHandler interface {
-	Init()
-}
-
-// New constructor
-func New(appId int, appSecret string, sbToken string) ReportHandler {
-	return &reportHandler{
-		AppId:        appId,
-		AppSecret:    appSecret,
-		Token:        sbToken,
-		googleSheets: gsh.New(),
-	}
+	Init(ctx context.Context) error
 }
 
 type reportHandler struct {
-	AppId        int
-	AppSecret    string
-	Token        string
-	AdvertiserId float64
-	googleSheets gsh.GoogleSheet
+	env    *env.Env
+	store  store.Store
+	parser parser.Parser
+	token  string
+}
+
+// New constructor
+func New(env *env.Env) ReportHandler {
+	return &reportHandler{
+		env:    env,
+		token:  env.AppToken,
+		parser: parser.New(),
+	}
 }
 
 // Init process handlers initialization
-func (rh *reportHandler) Init() {
+func (rh *reportHandler) Init(ctx context.Context) error {
 	http.HandleFunc("/auth/callback", rh.callback)
 	http.HandleFunc("/report/auction", rh.getAuctionReport)
-	http.HandleFunc("/sheets/write_row", rh.writeRow)
+	http.HandleFunc("/report/reservation", rh.getReservationReport)
 
-	err := rh.googleSheets.Init(context.Background())
-	if err != nil {
-		fmt.Printf("[Init] failed to init google sheets, error: %s\n", err.Error())
-	}
+	var err error
+	rh.store, err = store.New(ctx, rh.env.ProjectId)
+
+	return err
 }
 
 // callback handles TikTok auth callbacks
@@ -59,11 +60,11 @@ func (rh *reportHandler) callback(rw http.ResponseWriter, request *http.Request)
 	fmt.Printf("[callback] received callback with auth_code: %s\n", authCode)
 
 	if len(authCode) == 0 {
-		_, _ = io.WriteString(rw, "[callback] received empty auth_code!")
+		io.WriteString(rw, "[callback] received empty auth_code!")
 		return
 	}
 
-	payload := map[string]interface{}{"app_id": rh.AppId, "secret": rh.AppSecret, "auth_code": authCode}
+	payload := map[string]interface{}{"app_id": rh.env.AppId, "secret": rh.env.AppSecret, "auth_code": authCode}
 	jsonData, err := json.Marshal(payload)
 
 	resp, err := utils.SendPOST(tokenUrl, jsonData)
@@ -79,10 +80,10 @@ func (rh *reportHandler) callback(rw http.ResponseWriter, request *http.Request)
 	}
 
 	data := resp["data"].(map[string]interface{})
-	rh.Token = data["access_token"].(string)
+	rh.token = data["access_token"].(string)
 
-	fmt.Printf("[callback] access token is %s\n", rh.Token)
-	_, _ = io.WriteString(rw, fmt.Sprintf("%v", resp))
+	fmt.Printf("[callback] access token is %s\n", rh.token)
+	io.WriteString(rw, fmt.Sprintf("%v", resp))
 }
 
 // getAuctionReport get auction marketing data from TikTok API
@@ -90,43 +91,69 @@ func (rh *reportHandler) getAuctionReport(rw http.ResponseWriter, request *http.
 	requestQuery := request.URL.Query()
 	fmt.Printf("[getAuctionReport] received query: %v\n", requestQuery)
 
-	u, _ := url.Parse(reportsUrl)
-	query := u.Query()
-	query.Add("service_type", "AUCTION")
-	query.Add("report_type", "BASIC")
-	query.Add("data_level", "AUCTION_AD")
-	query.Add("dimensions", "[\"ad_id\"]")
-	query.Add("advertiser_id", requestQuery.Get("advertiser_id"))
-	query.Add("start_date", requestQuery.Get("start_date"))
-	query.Add("end_date", requestQuery.Get("end_date"))
-	u.RawQuery = query.Encode()
-
-	resp, err := utils.SendGET(u.String(), rh.Token)
+	reqUrl := createUrl(&requestQuery, "AUCTION")
+	respRaw, err := utils.SendGET(reqUrl, rh.token)
 	if err != nil {
-		_, _ = io.WriteString(rw, fmt.Sprintf("failed to get report, error: %s\n", err.Error()))
+		io.WriteString(rw, fmt.Sprintf("failed to get report, error: %s\n", err.Error()))
 		return
 	}
 
-	_, _ = io.WriteString(rw, resp)
+	resp, err := rh.parser.Parse(respRaw)
+	if err != nil {
+		io.WriteString(rw, fmt.Sprintf("failed to parse API response, error: %s\n", err.Error()))
+		return
+	}
+
+	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.DatasetId, rh.env.AucTableId)
+
+	if err == nil {
+		io.WriteString(rw, "ok")
+	} else {
+		io.WriteString(rw, err.Error())
+	}
 }
 
-// writeRow writes simple row in google spreadsheets
-func (rh *reportHandler) writeRow(rw http.ResponseWriter, request *http.Request) {
-	query := request.URL.Query()
-	_ = request.ParseForm()
+// getReservationReport get reservation marketing data from TikTok API
+func (rh *reportHandler) getReservationReport(rw http.ResponseWriter, request *http.Request) {
+	requestQuery := request.URL.Query()
+	fmt.Printf("[getReservationReport] received query: %v\n", requestQuery)
 
-	valueRange := query.Get("value_range")
-	strValues := request.Form["values"]
-
-	var values = make([]interface{}, len(strValues))
-	for i := range strValues {
-		values[i] = strValues[i]
-	}
-
-	err := rh.googleSheets.WriteRow(valueRange, values)
+	reqUrl := createUrl(&requestQuery, "RESERVATION")
+	respRaw, err := utils.SendGET(reqUrl, rh.token)
 	if err != nil {
-		fmt.Printf("[writeRow] failed to write data to sheet, error: %s\n", err.Error())
+		io.WriteString(rw, fmt.Sprintf("failed to get report, error: %s\n", err.Error()))
+		return
 	}
 
-	_, _ = io.WriteString(rw, "ok")
+	resp, err := rh.parser.Parse(respRaw)
+	if err != nil {
+		io.WriteString(rw, fmt.Sprintf("failed to parse API response, error: %s\n", err.Error()))
+		return
+	}
+
+	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.DatasetId, rh.env.ResTableId)
+
+	if err == nil {
+		io.WriteString(rw, "ok")
+	} else {
+		io.WriteString(rw, err.Error())
+	}
+}
+
+// createUrl - creates TikTok API request URL
+func createUrl(request *url.Values, serviceType string) string {
+	u, _ := url.Parse(reportsUrl)
+
+	query := u.Query()
+	query.Add("service_type", serviceType)
+	query.Add("report_type", "BASIC")
+	query.Add("data_level", fmt.Sprintf("%s_ADVERTISER", serviceType))
+	query.Add("dimensions", "[\"advertiser_id\"]")
+	query.Add("advertiser_id", request.Get("advertiser_id"))
+	query.Add("start_date", request.Get("start_date"))
+	query.Add("end_date", request.Get("end_date"))
+	query.Add("metrics", "[\"spend\", \"ctr\", \"impressions\", \"cpc\", \"cpm\"]")
+	u.RawQuery = query.Encode()
+
+	return u.String()
 }

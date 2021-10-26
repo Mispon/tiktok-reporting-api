@@ -3,5 +3,13 @@ version: "3.9"
 services:
   api:
     build: .
+    environment:
+      - API_ENDPOINT=0.0.0.0:80
+      - TIKTOK_APP_ID=7013617763738451969
+      - TIKTOK_APP_SECRET=d1b5e64e09992b4652a3bc9c2ff3dfe1fa41ec6e
+      - BQ_PROJECT_ID=mispon-dev
+      - BQ_DATASET_ID=main
+      - BQ_AUC_TABLE_ID=auction
+      - BQ_RES_TABLE_ID=reservation
     ports:
       - "8080:80"

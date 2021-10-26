@@ -32,7 +32,7 @@ RUN make build
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
 WORKDIR /root/
-COPY --from=builder /home/developer/go/src/github.com/mispon/tiktok-reporting-api/bin/tiktok-reporting-api .
+COPY --from=builder /home/developer/go/src/github.com/mispon/tiktok-reporting-api/bin/ .
 RUN chown root:root tiktok-reporting-api
 EXPOSE 80
 ENTRYPOINT ["./tiktok-reporting-api"]
