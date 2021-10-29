@@ -12,33 +12,37 @@ import (
 )
 
 type Store interface {
-	Save(ctx context.Context, data []parser.ListItem, datasetId string, tableId string) error
+	Save(ctx context.Context, data []parser.ListItem, tableId string) error
 	Load(ctx context.Context) error
 }
 
 type store struct {
-	bq *bigquery.Client
+	bq        *bigquery.Client
+	projectId string
+	datasetId string
 }
 
 // New - constructor
-func New(ctx context.Context, projectId string) (Store, error) {
+func New(ctx context.Context, projectId string, datasetId string) (Store, error) {
 	instance, err := bigquery.NewClient(ctx, projectId, option.WithCredentialsFile("credentials.json"))
 	if err != nil {
 		return nil, err
 	}
-	return &store{bq: instance}, nil
+	return &store{
+		bq:        instance,
+		projectId: projectId,
+		datasetId: datasetId,
+	}, nil
 }
 
 // Save - saves data to storage
-func (s *store) Save(ctx context.Context, data []parser.ListItem, datasetId string, tableId string) error {
-	// todo: remove old by date
-
-	inserter := s.bq.Dataset(datasetId).Table(tableId).Inserter()
+func (s *store) Save(ctx context.Context, data []parser.ListItem, tableId string) error {
+	inserter := s.bq.Dataset(s.datasetId).Table(tableId).Inserter()
 
 	items := make([]Item, len(data))
 	for i, value := range data {
 		items[i] = Item{
-			Date:        strings.TrimRight(value.Dimensions.StatTimeDay, " 00:00:00"),
+			Date:        strings.TrimSpace(strings.TrimRight(value.Dimensions.StatTimeDay, "00:00:00")),
 			Spend:       value.Metrics.Spend,
 			Impressions: value.Metrics.Impressions,
 			Ctr:         value.Metrics.Ctr,

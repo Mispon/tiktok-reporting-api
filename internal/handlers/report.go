@@ -48,7 +48,7 @@ func (rh *reportHandler) Init(ctx context.Context) error {
 	http.HandleFunc("/report/reservation", rh.getReservationReport)
 
 	var err error
-	rh.store, err = store.New(ctx, rh.env.ProjectId)
+	rh.store, err = store.New(ctx, rh.env.ProjectId, rh.env.DatasetId)
 
 	return err
 }
@@ -104,10 +104,15 @@ func (rh *reportHandler) getAuctionReport(rw http.ResponseWriter, request *http.
 		return
 	}
 
-	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.DatasetId, rh.env.AucTableId)
+	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.AucTableId)
+	if err != nil {
+		io.WriteString(rw, fmt.Sprintf("failed to save API response, error: %s\n", err.Error()))
+		return
+	}
 
+	r, err := json.Marshal(resp)
 	if err == nil {
-		io.WriteString(rw, "ok")
+		io.WriteString(rw, string(r))
 	} else {
 		io.WriteString(rw, err.Error())
 	}
@@ -131,10 +136,10 @@ func (rh *reportHandler) getReservationReport(rw http.ResponseWriter, request *h
 		return
 	}
 
-	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.DatasetId, rh.env.ResTableId)
+	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.ResTableId)
 
 	if err == nil {
-		io.WriteString(rw, "ok")
+		io.WriteString(rw, respRaw)
 	} else {
 		io.WriteString(rw, err.Error())
 	}
@@ -148,7 +153,7 @@ func createUrl(request *url.Values, serviceType string) string {
 	query.Add("service_type", serviceType)
 	query.Add("report_type", "BASIC")
 	query.Add("data_level", fmt.Sprintf("%s_ADVERTISER", serviceType))
-	query.Add("dimensions", "[\"advertiser_id\"]")
+	query.Add("dimensions", "[\"advertiser_id\", \"stat_time_day\"]")
 	query.Add("advertiser_id", request.Get("advertiser_id"))
 	query.Add("start_date", request.Get("start_date"))
 	query.Add("end_date", request.Get("end_date"))

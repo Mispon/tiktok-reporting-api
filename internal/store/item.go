@@ -13,7 +13,7 @@ type Item struct {
 	Cpm         string
 }
 
-func (i *Item) Save() (map[string]bigquery.Value, string, error) {
+func (i Item) Save() (map[string]bigquery.Value, string, error) {
 	return map[string]bigquery.Value{
 		"date":  i.Date,
 		"spend": i.Spend,
@@ -21,5 +21,5 @@ func (i *Item) Save() (map[string]bigquery.Value, string, error) {
 		"imp":   i.Impressions,
 		"cpc":   i.Cpc,
 		"cpm":   i.Cpm,
-	}, bigquery.NoDedupeID, nil
+	}, i.Date, nil
 }

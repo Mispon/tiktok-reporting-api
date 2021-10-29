@@ -2,6 +2,7 @@ package parser
 
 import (
 	"log"
+	"strings"
 	"testing"
 )
 
@@ -57,5 +58,14 @@ func TestParse(t *testing.T) {
 
 	if resp == nil || err != nil {
 		log.Fatalf(`parser.Parse() failed, %v`, err)
+	}
+}
+
+func TestTrimRight(t *testing.T) {
+	val := "2021-10-20 00:00:00"
+	result := strings.TrimSpace(strings.TrimRight(val, "00:00:00"))
+
+	if result != "2021-10-20" {
+		log.Fatalf(`TrimRight() failed, result = %v`, result)
 	}
 }

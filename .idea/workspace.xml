@@ -67,10 +67,18 @@
       <recent name="C:\Users\tomyt\Projects\Personal\Golang\tiktok-reporting-api\internal\store" />
     </key>
   </component>
-  <component name="RunManager" selected="Go Test.go test">
+  <component name="RunManager" selected="Go Build.go build">
     <configuration name="go build" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="tiktok-reporting-api" />
       <working_directory value="$PROJECT_DIR$/bin" />
+      <envs>
+        <env name="TIKTOK_APP_TOKEN" value="30ef20f308344569f40f80aaa9361b62bbb43bf3" />
+        <env name="TIKTOK_APP_ID" value="7013347245555171330" />
+        <env name="TIKTOK_APP_SECRET" value="7e64c96965f1d7d69e389c98ac19e401afeaf6fb" />
+        <env name="BQ_PROJECT_ID" value="sturdy-spanner-330114" />
+        <env name="BQ_DATASET_ID" value="reports" />
+        <env name="BQ_AUC_TABLE_ID" value="auction" />
+      </envs>
       <kind value="PACKAGE" />
       <package value="github.com/mispon/tiktok-reporting-api/cmd/tiktok-reporting-api" />
       <directory value="$PROJECT_DIR$/cmd/tiktok-reporting-api" />

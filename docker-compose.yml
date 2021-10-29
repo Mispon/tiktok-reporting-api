@@ -7,6 +7,7 @@ services:
       - API_ENDPOINT=0.0.0.0:80
       - TIKTOK_APP_ID=7013617763738451969
       - TIKTOK_APP_SECRET=d1b5e64e09992b4652a3bc9c2ff3dfe1fa41ec6e
+      - TIKTOK_APP_TOKEN=30ef20f308344569f40f80aaa9361b62bbb43bf3
       - BQ_PROJECT_ID=mispon-dev
       - BQ_DATASET_ID=main
       - BQ_AUC_TABLE_ID=auction
