@@ -28,6 +28,7 @@ func New(ctx context.Context, projectId string, datasetId string) (Store, error)
 	if err != nil {
 		return nil, err
 	}
+
 	return &store{
 		bq:        instance,
 		projectId: projectId,
@@ -43,6 +44,7 @@ func (s *store) Save(ctx context.Context, data []parser.ListItem, tableId string
 	for i, value := range data {
 		items[i] = Item{
 			Date:        strings.TrimSpace(strings.TrimRight(value.Dimensions.StatTimeDay, "00:00:00")),
+			AdvertId:    fmt.Sprintf("%d", value.Dimensions.AdvertiserId),
 			Spend:       value.Metrics.Spend,
 			Impressions: value.Metrics.Impressions,
 			Ctr:         value.Metrics.Ctr,

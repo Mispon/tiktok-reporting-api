@@ -12,3 +12,4 @@ build: .deps .build .copy
 .PHONY: .copy
 .copy:
 	cp configs/credentials.json bin/
+	cp configs/advert_ids.txt bin/

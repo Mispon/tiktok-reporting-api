@@ -50,7 +50,7 @@
     <property name="go.formatter.settings.were.checked" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.modules.go.list.on.any.changes.was.set" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/bin" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/configs" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
@@ -61,6 +61,7 @@
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\tomyt\Projects\Personal\Golang\tiktok-reporting-api\configs" />
       <recent name="C:\Users\tomyt\Projects\Personal\Golang\tiktok-reporting-api\bin" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
@@ -68,6 +69,14 @@
     </key>
   </component>
   <component name="RunManager" selected="Go Build.go build">
+    <configuration default="true" type="GoApplicationRunConfiguration" factoryName="Go Application">
+      <module name="tiktok-reporting-api" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="FILE" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <method v="2" />
+    </configuration>
     <configuration name="go build" type="GoApplicationRunConfiguration" factoryName="Go Application">
       <module name="tiktok-reporting-api" />
       <working_directory value="$PROJECT_DIR$/bin" />
@@ -75,15 +84,27 @@
         <env name="TIKTOK_APP_TOKEN" value="30ef20f308344569f40f80aaa9361b62bbb43bf3" />
         <env name="TIKTOK_APP_ID" value="7013347245555171330" />
         <env name="TIKTOK_APP_SECRET" value="7e64c96965f1d7d69e389c98ac19e401afeaf6fb" />
-        <env name="BQ_PROJECT_ID" value="sturdy-spanner-330114" />
+        <env name="BQ_PROJECT_ID" value="" />
         <env name="BQ_DATASET_ID" value="reports" />
         <env name="BQ_AUC_TABLE_ID" value="auction" />
+        <env name="BQ_RES_TABLE_ID" value="reservation" />
+        <env name="JOB_INTERVAL_HOURS" value="1" />
+        <env name="STATISTIC_DEPTH_DAYS" value="30" />
       </envs>
       <kind value="PACKAGE" />
       <package value="github.com/mispon/tiktok-reporting-api/cmd/tiktok-reporting-api" />
       <directory value="$PROJECT_DIR$/cmd/tiktok-reporting-api" />
       <filePath value="$PROJECT_DIR$" />
       <output_directory value="$PROJECT_DIR$/bin" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="GoTestRunConfiguration" factoryName="Go Test">
+      <module name="tiktok-reporting-api" />
+      <working_directory value="$PROJECT_DIR$" />
+      <kind value="DIRECTORY" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
       <method v="2" />
     </configuration>
     <configuration name="go test" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true">

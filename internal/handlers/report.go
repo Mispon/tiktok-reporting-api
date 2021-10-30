@@ -3,52 +3,49 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
-	"github.com/mispon/tiktok-reporting-api/internal/parser"
+	"github.com/mispon/tiktok-reporting-api/internal/tiktok"
 
 	"github.com/mispon/tiktok-reporting-api/internal/store"
 
 	"github.com/mispon/tiktok-reporting-api/internal/env"
-	"github.com/mispon/tiktok-reporting-api/internal/utils"
-)
-
-const (
-	tokenUrl   = "https://business-api.tiktok.com/open_api/v1.2/oauth2/access_token/"
-	reportsUrl = "https://business-api.tiktok.com/open_api/v1.2/reports/integrated/get/"
 )
 
 type ReportHandler interface {
-	Init(ctx context.Context) error
+	Init(ctx context.Context, env *env.Env) error
 }
 
 type reportHandler struct {
-	env    *env.Env
-	store  store.Store
-	parser parser.Parser
-	token  string
+	api        tiktok.Api
+	store      store.Store
+	aucTableId string
+	resTableId string
 }
 
 // New constructor
-func New(env *env.Env) ReportHandler {
-	return &reportHandler{
-		env:    env,
-		token:  env.AppToken,
-		parser: parser.New(),
-	}
+func New() ReportHandler {
+	return &reportHandler{}
 }
 
 // Init process handlers initialization
-func (rh *reportHandler) Init(ctx context.Context) error {
+func (rh *reportHandler) Init(ctx context.Context, env *env.Env) error {
+	var err error
+
 	http.HandleFunc("/auth/callback", rh.callback)
 	http.HandleFunc("/report/auction", rh.getAuctionReport)
 	http.HandleFunc("/report/reservation", rh.getReservationReport)
 
-	var err error
-	rh.store, err = store.New(ctx, rh.env.ProjectId, rh.env.DatasetId)
+	rh.aucTableId = env.AucTableId
+	rh.resTableId = env.ResTableId
+
+	rh.api = tiktok.New(env)
+	rh.store, err = store.New(ctx, env.ProjectId, env.DatasetId)
 
 	return err
 }
@@ -56,55 +53,32 @@ func (rh *reportHandler) Init(ctx context.Context) error {
 // callback handles TikTok auth callbacks
 func (rh *reportHandler) callback(rw http.ResponseWriter, request *http.Request) {
 	query := request.URL.Query()
-	authCode := query.Get("auth_code")
-	fmt.Printf("[callback] received callback with auth_code: %s\n", authCode)
+	fmt.Printf("[callback] received query: %v\n", query)
 
-	if len(authCode) == 0 {
-		io.WriteString(rw, "[callback] received empty auth_code!")
-		return
+	if err := rh.api.OnAuth(query); err != nil {
+		io.WriteString(rw, err.Error())
 	}
 
-	payload := map[string]interface{}{"app_id": rh.env.AppId, "secret": rh.env.AppSecret, "auth_code": authCode}
-	jsonData, err := json.Marshal(payload)
-
-	resp, err := utils.SendPOST(tokenUrl, jsonData)
-	if err != nil {
-		fmt.Printf("[callback] failed to get token, error: %s\n", err.Error())
-		return
-	}
-
-	code, found := resp["code"]
-	if !found || code.(float64) != 0 {
-		fmt.Printf("[callback] received invalid response: %v\n", resp)
-		return
-	}
-
-	data := resp["data"].(map[string]interface{})
-	rh.token = data["access_token"].(string)
-
-	fmt.Printf("[callback] access token is %s\n", rh.token)
-	io.WriteString(rw, fmt.Sprintf("%v", resp))
+	io.WriteString(rw, "ok")
 }
 
 // getAuctionReport get auction marketing data from TikTok API
 func (rh *reportHandler) getAuctionReport(rw http.ResponseWriter, request *http.Request) {
-	requestQuery := request.URL.Query()
-	fmt.Printf("[getAuctionReport] received query: %v\n", requestQuery)
+	query := request.URL.Query()
 
-	reqUrl := createUrl(&requestQuery, "AUCTION")
-	respRaw, err := utils.SendGET(reqUrl, rh.token)
+	advertId, dateFrom, dateTo, err := parseQuery(query)
+	if err != nil {
+		io.WriteString(rw, fmt.Sprintf("failed to parse query, error: %s\n", err.Error()))
+		return
+	}
+
+	resp, err := rh.api.GetAuctionReport(advertId, dateFrom, dateTo)
 	if err != nil {
 		io.WriteString(rw, fmt.Sprintf("failed to get report, error: %s\n", err.Error()))
 		return
 	}
 
-	resp, err := rh.parser.Parse(respRaw)
-	if err != nil {
-		io.WriteString(rw, fmt.Sprintf("failed to parse API response, error: %s\n", err.Error()))
-		return
-	}
-
-	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.AucTableId)
+	err = rh.store.Save(request.Context(), resp.Data.List, rh.aucTableId)
 	if err != nil {
 		io.WriteString(rw, fmt.Sprintf("failed to save API response, error: %s\n", err.Error()))
 		return
@@ -120,45 +94,44 @@ func (rh *reportHandler) getAuctionReport(rw http.ResponseWriter, request *http.
 
 // getReservationReport get reservation marketing data from TikTok API
 func (rh *reportHandler) getReservationReport(rw http.ResponseWriter, request *http.Request) {
-	requestQuery := request.URL.Query()
-	fmt.Printf("[getReservationReport] received query: %v\n", requestQuery)
+	query := request.URL.Query()
 
-	reqUrl := createUrl(&requestQuery, "RESERVATION")
-	respRaw, err := utils.SendGET(reqUrl, rh.token)
+	advertId, dateFrom, dateTo, err := parseQuery(query)
+	if err != nil {
+		io.WriteString(rw, fmt.Sprintf("failed to parse query, error: %s\n", err.Error()))
+		return
+	}
+
+	resp, err := rh.api.GetAuctionReport(advertId, dateFrom, dateTo)
 	if err != nil {
 		io.WriteString(rw, fmt.Sprintf("failed to get report, error: %s\n", err.Error()))
 		return
 	}
 
-	resp, err := rh.parser.Parse(respRaw)
+	err = rh.store.Save(request.Context(), resp.Data.List, rh.resTableId)
 	if err != nil {
-		io.WriteString(rw, fmt.Sprintf("failed to parse API response, error: %s\n", err.Error()))
+		io.WriteString(rw, fmt.Sprintf("failed to save API response, error: %s\n", err.Error()))
 		return
 	}
 
-	err = rh.store.Save(request.Context(), resp.Data.List, rh.env.ResTableId)
-
+	r, err := json.Marshal(resp)
 	if err == nil {
-		io.WriteString(rw, respRaw)
+		io.WriteString(rw, string(r))
 	} else {
 		io.WriteString(rw, err.Error())
 	}
 }
 
-// createUrl - creates TikTok API request URL
-func createUrl(request *url.Values, serviceType string) string {
-	u, _ := url.Parse(reportsUrl)
+func parseQuery(query url.Values) (int64, string, string, error) {
+	advertId, err := strconv.ParseInt(query.Get("advertiser_id"), 10, 64)
+	if err != nil {
+		return -1, "", "", err
+	}
 
-	query := u.Query()
-	query.Add("service_type", serviceType)
-	query.Add("report_type", "BASIC")
-	query.Add("data_level", fmt.Sprintf("%s_ADVERTISER", serviceType))
-	query.Add("dimensions", "[\"advertiser_id\", \"stat_time_day\"]")
-	query.Add("advertiser_id", request.Get("advertiser_id"))
-	query.Add("start_date", request.Get("start_date"))
-	query.Add("end_date", request.Get("end_date"))
-	query.Add("metrics", "[\"spend\", \"ctr\", \"impressions\", \"cpc\", \"cpm\"]")
-	u.RawQuery = query.Encode()
+	dateFrom, dateTo := query.Get("start_date"), query.Get("end_date")
+	if len(dateFrom) == 0 || len(dateTo) == 0 {
+		return advertId, "", "", errors.New("start_date OR end_date not specified")
+	}
 
-	return u.String()
+	return advertId, dateFrom, dateTo, nil
 }
