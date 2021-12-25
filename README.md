@@ -1,39 +1,33 @@
 # TikTok Reporting API
-
-Автоматически или через вызов метода в Rest API загрузает маркетинговые данные из API TikTok
+Automatically or through a method call in the Rest API downloads marketing data from the TikTok API
 
 ## Setup
-
-1. Заполнить переменные окружения в docker-compose.yml
-    - **ports** - связь локального порта, с портом приложения в контейнере, eg. `10010:80`, трафик сервера на порту
-      10010 будет прокидываться внутрь контейнера на порт 80
-    - **API_ENDPOINT** - хост и порт приложения внутри контейнера, eg. `0.0.0.0:1234`, тогда в ports нужно будет
-      указать `10010:1234`
-    - **TIKTOK_APP_ID** - идентификатор приложения в tiktok
-    - **TIKTOK_APP_SECRET** - секрет приложения в tiktok
-    - **TIKTOK_APP_TOKEN** - активный токен в tiktok, если уже есть
-    - **BQ_PROJECT_ID** - идентификатор приложения в google bigquery
-    - **BQ_DATASET_ID** - название датасета в google bigquery
-    - **BQ_AUC_TABLE_ID** - название таблицы для данных по аукционам в google bigquery
-    - **BQ_RES_TABLE_ID** - название таблицы для данных по резервации в google bigquery
-    - **JOB_INTERVAL_HOURS** - с какой периодичностью запускать джобу, в часах
-    - **STATISTIC_DEPTH_DAYS** - с какой глубиной запрашивать данные, в днях, eg. 7 - означает за последние 7 дней
-2. Заполнить файл `credentials.json` в папке `configs/`
-3. Если есть конкретный список `advertising_ids`, то можно положить его в файл `advert_ids.txt` в папке `configs/`
-   каждый на отдельной строке. На старте, приложение считает айдишники из файла и будет собирать статистику по ним. **
-   Вызов колбека перезатрет айдишники из файла.**
+1. Populate environment variables in docker-compose.yml
+    - **ports** - the link of the local port, to the port of the application in the container, eg. `10010:80`, server traffic on port 10010 will be forwarded inside the container to port 80
+    - **API_ENDPOINT** - host and port of the application inside the container, eg. `0.0.0.0:1234`, then in ports you will need to specify `10010:1234`
+    - **TIKTOK_APP_ID** - TikTok application ID
+    - **TIKTOK_APP_SECRET** - TikTok application secret
+    - **TIKTOK_APP_TOKEN** - TikTok application actual token, if there is
+    - **BQ_PROJECT_ID** - Google bigquery ID
+    - **BQ_DATASET_ID** - name of the dataset in google bigquery
+    - **BQ_AUC_TABLE_ID** - name of the table for data on auctions in google bigquery
+    - **BQ_RES_TABLE_ID** - name of the table for data on reservation in google bigquery
+    - **JOB_INTERVAL_HOURS** - how often to run the job, in hours
+    - **STATISTIC_DEPTH_DAYS** - with what depth to request data, in days, eg. 7 mean for the last 7 days
+2. Fill `credentials.json` config in folder `configs/`
+3. If there are `advertising_ids`, you can put it into the file `advert_ids.txt` in folder `configs/`
+   each one on the new line. At the start, the application counts the IDs from the file and will collect statistics on them. **
+   Auth callback will overwrite the IDs from the file.**
 
 ## Run
-
-1. Выполнить команду `docker compose up -d` в корневой директории проекта
-2. Привязать колбек авторизации `0.0.0.0:80/auth/callback` (заменить 0.0.0.0:80 на свой домен/хост-порт) в ЛК тиктока
+1. Run `docker compose up -d` in project's root folder
+2. Bind the authorization callback `0.0.0.0:80/auth/callback` (change 0.0.0.0:80 to your domain/host:port) in TikTok personal area
 
 ## Usage
-
-В сервисе джоба запускается с заданным интервалом, берет айдишники, полученные либо из файла при старте, либо из ответа
-в колбеке авторизации, получает данные из API тиктока и записывает в две таблицы в bigquery, по аукциону и резервации.  
-Можно запускать джобу несколько раз в день и за прошлые даты, более свежая статистика перезатрет старую.  
-Можно получить статистику по конкретной кампании за указанный период вызовом методов апи: `/report/auction`
-и `/report/reservation`,
-пример: `http://localhost:80/report/auction?advertiser_id=123456789&start_date=2021-09-29&end_date=2021-10-29`  
-Данные по кампании вернуться в ответе и будут записаны в bigquery
+In the service, the job starts at a specified interval, takes the IDs received either from the file at startup or from the response
+in the authorization callback, receives data from the tiktok API and writes it to two tables in bigquery, by auction and reservation.
+You can run the job several times a day and for previous dates, more recent statistics will overwrite the old one.
+You can get statistics for a specific campaign for a specified period by calling the http api methods: `/report/auction`
+and `/report/reservation`,
+For example: `http://localhost:80/report/auction?advertiser_id=123456789&start_date=2021-09-29&end_date=2021-10-29`  
+Marketing company data will be returned in the reply and will be recorded in bigquery
